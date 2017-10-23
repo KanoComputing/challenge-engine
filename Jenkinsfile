@@ -17,7 +17,6 @@ pipeline {
         stage('install dependencies') {
             steps {
                 script {
-                    sh "npm install -g https://github.com/marcelmeulemans/wct-junit-reporter.git"
                     sh "npm i"
                     sh "bower i"
                 }
