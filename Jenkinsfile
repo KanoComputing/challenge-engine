@@ -28,7 +28,7 @@ pipeline {
         stage('test') {
             steps {
                 script {
-                    sh "wct --local chrome"
+                    sh "npm run test"
                     junit allowEmptyResults: true, testResults: 'wct.xml'
                 }
             }
