@@ -28,7 +28,7 @@ pipeline {
         stage('test') {
             steps {
                 script {
-                    sh "npm run test"
+                    sh "npm test"
                     junit allowEmptyResults: true, testResults: 'wct.xml'
                 }
             }
