@@ -1,0 +1,20 @@
+<script>
+        ((Kano) => {
+    
+            Kano.Challenge = Kano.Challenge || {};
+    
+            class ElementsRegistry {
+                constructor () {
+                    this._registry = {};
+                }
+                add (name, el) {
+                    this._registry[name] = el;
+                }
+                get (name) {
+                    return this._registry[name];
+                }
+            }
+    
+            Kano.Challenge.ElementsRegistry = ElementsRegistry;
+        })(window.Kano = window.Kano || {});
+    </script>

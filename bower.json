@@ -1,0 +1,20 @@
+{
+  "name": "challenge-engine",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "Paul Varache <perso@paulvarache.ninja>"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "web-component-tester": "^6.3.0"
+  }
+}

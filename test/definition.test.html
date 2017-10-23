@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="../bower_components/web-component-tester/browser.js"></script>
+        <link rel="import" href="../definition.html">
+    </head>
+    <body>
+        <script>
+            suite('Kano.ChallengeDefinition', () => {
+                let definition;
+                setup(() => {
+                    definition = new Kano.Challenge.Definition();
+                });
+                test('expands the shorthands when started', () => {
+                    definition.defineShorthand('test', data => {
+                        return [{
+                            'name': `${data.prefix}-step1`
+                        },{
+                            'name': `${data.prefix}-step2`
+                        }];
+                    });
+
+                    definition.setSteps([{ type: 'test', prefix: 'pr' }]);
+                    definition.start();
+                    assert.isNotNull(definition.steps);
+                    assert.equal(definition.steps.length, 2);
+                    assert.equal(definition.steps[0].name, 'pr-step1');
+                    assert.equal(definition.steps[1].name, 'pr-step2');
+                });
+                test('A challenge starts at the first step', () => {
+                    const step = { name: 'step1' };
+                    definition.setSteps([step]);
+                    definition.start();
+                    assert.equal(definition.stepIndex, 0);
+                    assert.equal(definition.step.name, step.name);
+                });
+                test('A challenge runs the defined behaviors when entering the step', () => {
+                    const step = { name: 'step1', testing: { some: 'data' } };
+                    let behaviorDidRun = false;
+                    definition.defineBehavior('testing', data => {
+                        behaviorDidRun = true;
+                        assert.equal(data.some, step.testing.some);
+                    });
+                    definition.setSteps([step]);
+                    definition.start();
+                    assert.equal(behaviorDidRun, true);
+                });
+
+                test('A challenge runs the defined behaviors when leaving the step', () => {
+                    let leavingBehaviorDidRun = false;
+                    definition.defineBehavior('testing', data => {}, data => {
+                        leavingBehaviorDidRun = true;
+                    });
+                    definition.setSteps([
+                        { name: 'step1', testing: { some: 'data' } },
+                        { name: 'step2', testing: { some: 'data' } }
+                    ]);
+                    definition.start();
+                    assert.equal(leavingBehaviorDidRun, false);
+                    definition.stepIndex = 1;
+                    assert.equal(leavingBehaviorDidRun, true);
+                });
+
+                test('Validator callback runs when matching event is triggered', () => {
+                    let validatorDidRun = false;
+                    const step = {
+                        name: 'step1',
+                        validation: {
+                            testing: {
+                                some: 'data'
+                            }
+                        }
+                    };
+                    const eventData = { event: 'data' };
+                    definition.addValidation('testing', (validation, event) => {
+                        validatorDidRun = true;
+                        assert.equal(validation.some, step.validation.testing.some);
+                        assert.equal(event.type, 'testing');
+                        assert.equal(event.data, eventData);
+                        return false;
+                    });
+                    definition.setSteps([step]);
+                    definition.start();
+                    definition.triggerEvent('testing', eventData);
+                    assert.equal(validatorDidRun, true);
+                    assert.equal(definition.stepIndex, 0);
+                });
+
+                test('Go to next step when single event name is provided', () => {
+                    definition.setSteps([{
+                        name: 'step1',
+                        validation: {
+                            testing: true
+                        }
+                    }, { name: 'extraStep'}]);
+                    definition.start();
+                    definition.triggerEvent('testing');
+                    assert.equal(definition.stepIndex, 1);
+                });
+
+                test('Go to next step is the validation returns true', () => {
+                    definition.addValidation('testing', (validation, event) => {
+                        return true;
+                    });
+                    definition.setSteps([{
+                        name: 'step1',
+                        validation: {
+                            testing: {}
+                        }
+                    }, { name: 'extraStep'}]);
+                    definition.start();
+                    definition.triggerEvent('testing');
+                    assert.equal(definition.stepIndex, 1);
+                });
+
+                test('Runs fallback if validation returns false ', () => {
+                    let fallbackDidRun = false;
+                    definition.addValidation('testing', (validation, event) => {
+                        return false;
+                    });
+                    definition.addMatchFallback('testing', (validation, event) => {
+                        fallbackDidRun = true;
+                    });
+                    definition.setSteps([{
+                        name: 'step1',
+                        validation: {
+                            testing: {}
+                        }
+                    }, { name: 'extraStep'}]);
+                    definition.start();
+                    definition.triggerEvent('testing');
+                    assert.equal(definition.stepIndex, 0);
+                    assert.equal(fallbackDidRun, true);
+                });
+
+                test('Runs opposite action if event is triggered', () => {
+                    let oppositeActionDidRun = false;
+                    definition.addValidation('testing', (validation, event) => {
+                        return false;
+                    });
+                    definition.addOppositeAction('testing', 'not-testing', (validation, event) => {
+                        oppositeActionDidRun = true;
+                    });
+                    definition.setSteps([{
+                        name: 'step1',
+                        validation: {
+                            testing: {}
+                        }
+                    }, { name: 'extraStep'}]);
+                    definition.start();
+                    definition.triggerEvent('not-testing');
+                    assert.equal(definition.stepIndex, 0);
+                    assert.equal(oppositeActionDidRun, true);
+                });
+
+                test('Can create a store', () => {
+                    definition.createStore('things');
+                    assert.isOk(definition._stores['things']);
+                });
+
+                test('Can Store and access data', () => {
+                    definition.addToStore('things', 'thing', 7);
+                    assert.isOk(definition._stores['things']);
+                    assert.equal(definition.getFromStore('things', 'thing'), 7);
+                });
+
+                test('Can process shallow data', () => {
+                    definition.definePropertyProcessor('banner', (banner) => {
+                        return banner.toUpperCase();
+                    });
+                    definition.setSteps([{ banner: 'Banner Contents' }]);
+                    definition.start();
+                    assert.equal(definition.step.banner, 'BANNER CONTENTS');
+                });
+
+                test('Can process deep data', () => {
+                    definition.definePropertyProcessor('banner.text', (text) => {
+                        return text.toUpperCase();
+                    });
+                    definition.setSteps([{ banner: { text: 'Banner Contents' } }]);
+                    definition.start();
+                    assert.equal(definition.step.banner.text, 'BANNER CONTENTS');
+                });
+
+                test('Can process deep data in arrays', () => {
+                    definition.definePropertyProcessor('banners.*.text', (text) => {
+                        return text.toUpperCase();
+                    });
+                    definition.setSteps([{ banners: [{ text: 'Banner Contents' }] }]);
+                    definition.start();
+                    assert.equal(definition.step.banners[0].text, 'BANNER CONTENTS');
+                });
+
+                test('Can process Objects and Arrays', () => {
+                    definition.definePropertyProcessor('banners', (banners) => {
+                        return banners.map(banner => {
+                            return { text: banner.text, processed: true };
+                        });
+                    });
+                    definition.definePropertyProcessor('highObject', (object) => {
+                        return Object.keys(object).reduce((acc, key) => {
+                            return acc + object[key];
+                        }, 0);
+                    });
+                    definition.setSteps([{
+                        banners: [{ text: 'Banner Contents' }, { text: 'Second banner' }],
+                        highObject: { one: 1, two: 2, three: 3 }
+                    }]);
+                    definition.start();
+                    definition.step.banners.forEach(banner => {
+                        assert.equal(banner.processed, true);
+                    });
+                    assert.equal(definition.step.highObject, 6);
+                });
+            });
+        </script>
+    </body>
+</html>

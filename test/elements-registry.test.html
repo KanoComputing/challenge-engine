@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="../bower_components/web-component-tester/browser.js"></script>
+        <link rel="import" href="../elements-registry.html">
+    </head>
+    <body>
+        <script>
+            suite('Kano.Challenge.ElementsRegistry', () => {
+                let elementsRegistry;
+                setup(() => {
+                    elementsRegistry = new Kano.Challenge.ElementsRegistry();
+                });
+
+                test('Can add and access an element', () => {
+                    const el = document.createElement('button');
+                    elementsRegistry.add('banner-button', el);
+                    assert.equal(elementsRegistry.get('banner-button'), el);
+                });
+            });
+        </script>
+    </body>
+</html>
