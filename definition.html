@@ -15,6 +15,16 @@
                 this._changeCounts = {};
                 this._stepProcessors = {};
                 this._stores = {};
+                this._emitter = document.createElement('div');
+            }
+            trigger (name, data) {
+                this._emitter.dispatchEvent(new CustomEvent(name, { detail: data }));
+            }
+            addEventListener (name, callback) {
+                this._emitter.addEventListener(name, callback);
+            }
+            removeEventListener (name, callback) {
+                this._emitter.removeEventListener(name, callback);
             }
             createStore (name) {
                 return this._stores[name] = {};
@@ -36,8 +46,13 @@
             setSteps (steps) {
                 this._steps = steps;
             }
-            definePropertyProcessor (path, processor) {
-                this._stepProcessors[path] = processor;
+            definePropertyProcessor (paths, processor) {
+                if (!Array.isArray(paths)) {
+                    paths = [paths];
+                }
+                paths.forEach(path => {
+                    this._stepProcessors[path] = processor;
+                });
             }
             defineBehavior (name, enters, leaves) {
                 this._behaviors[name] = { enters, leaves };
@@ -58,8 +73,10 @@
                 this._checkEvent(this.step.validation, { type: name, data });
             }
             _checkEvent (validation, event) {
+                if (!validation) {
+                    return;
+                }
                 Object.keys(validation).forEach((type) => {
-                    let redirectAction;
                     // Type mismatch, check the opposite actions
                     if (type !== event.type) {
                         this._isOppositeAction(validation[type], type, event)
@@ -161,16 +178,24 @@
             }
             _updateStep () {
                 let oldStep = this.step;
-                this.step = this._processStep(this._steps[this._stepIndex]);
-                Object.keys(this.step).forEach(key => {
-                    if (key === VALIDATION_KEY) {
-                        return;
-                    }
-                    this._runBehavior(key, 'enters', this.step);
-                    if (oldStep) {
+                // Out of bond stepIndex happens at the end of a challenge. Set the step to null
+                this.step = this.steps[this._stepIndex] ? this._processStep(this.steps[this._stepIndex]) : null;
+                if (oldStep) {
+                    Object.keys(oldStep).forEach(key => {
+                        if (key === VALIDATION_KEY) {
+                            return;
+                        }
                         this._runBehavior(key, 'leaves', oldStep);
-                    }
-                });
+                    });
+                }
+                if (this.step) {
+                    Object.keys(this.step).forEach(key => {
+                        if (key === VALIDATION_KEY) {
+                            return;
+                        }
+                        this._runBehavior(key, 'enters', this.step);
+                    });
+                }
             }
             start () {
                 this.steps = this._expandSteps();
@@ -179,12 +204,16 @@
             set stepIndex (n) {
                 this._stepIndex = n;
                 this._updateStep();
+                if (this.done) {
+                    this.trigger('done');
+                }
             }
             get stepIndex () {
                 return this._stepIndex;
             }
             nextStep () {
-                if (this.stepIndex < this.steps.length - 1) {
+                // Let it go just over the max to indicate a `done` state
+                if (this.stepIndex < this.steps.length) {
                     this.stepIndex++;
                 }
             }
