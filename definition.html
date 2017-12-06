@@ -179,7 +179,9 @@
             _updateStep () {
                 let oldStep = this.step;
                 // Out of bond stepIndex happens at the end of a challenge. Set the step to null
-                this.step = this.steps[this._stepIndex] ? this._processStep(this.steps[this._stepIndex]) : null;
+                // Also deep copy the step, to apply the processing to a copy. A step can be selected more than once,
+                // But only the original definition must be processed
+                this.step = this.steps[this._stepIndex] ? this._processStep(JSON.parse(JSON.stringify(this.steps[this._stepIndex]))) : null;
                 if (oldStep) {
                     Object.keys(oldStep).forEach(key => {
                         if (key === VALIDATION_KEY) {
