@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "rollup": "^0.57.1",
     "wct-junit-reporter": "git+https://github.com/marcelmeulemans/wct-junit-reporter.git",
     "web-component-tester": "^6.3.0"
   }
