@@ -73,6 +73,12 @@ class Definition {
         if (!validation) {
             return;
         }
+        if (typeof validation === 'string') {
+            if (validation === event.type) {
+                this.nextStep();
+                return;
+            }
+        }
         Object.keys(validation).forEach((type) => {
             // Type mismatch, check the opposite actions
             if (type !== event.type) {

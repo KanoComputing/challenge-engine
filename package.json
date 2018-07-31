@@ -1,13 +1,14 @@
 {
   "name": "challenge-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "wct --local chrome"
+    "test": "wct --local chrome",
+    "bundle": "rollup -c"
   },
   "author": "",
   "license": "ISC",
